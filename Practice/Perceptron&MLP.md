@@ -1,3 +1,5 @@
+##  퍼셉트론과 MLP 
+
 ### before starting
 인공 신경망(Artificial Neural Network)의 가장 기본이 되는 두 가지 구조, 퍼셉트론(Perceptron)과 다층 퍼셉트론(MLP)에 대해 알아볼 것이다. 
 
