@@ -67,8 +67,43 @@ print(f'x의 미분값(dz/dx): {x.grad}')
 ```
 * $3x^2$을 미분한 값 6x에 x=2.0 대입 -> 12.0
 
+### 경사 하강법
+* y=wx + b 모델 학습
 
+```
+import torch
 
+#학습할 가중치(w)와 편향(b) 정의
+#이 두 텐서의 미분값을 계산해야 하므로 requires_grad=True 설정
+w = torch.tensor(1.0, requires_grad=True)
+b = torch.tensor(1.0, requires_grad=True)
 
+#입력 데이터와 정답 데이터
+x = torch.tensor(2.0)
+y_true = torch.tensor(5.0) # 실제 정답
 
+#순전파(Forward Propagation)
+#모델의 예측값 계산
+y_pred = w * x + b
 
+loss = (y_pred - y_true) ** 2
+
+print(f'예측값: {y_pred.item()}, 손실값: {loss.item()}')
+
+#역전파(Backpropagation)
+#손실에 대해 w와 b의 미분값 계산
+loss.backward()
+
+#w와 b의 미분값(기울기) 확인
+#이 기울기를 이용해 w와 b를 업데이트하여 손실을 줄일 수 있음
+print(f'w의 미분값: {w.grad}, b의 미분값: {b.grad}')
+
+#예측값: 3.0, 손실값: 4.0
+#w의 미분값: -8.0, b의 미분값: -4.0
+```
+
+* w와 b의 기울기가 계산된다. 이 기울기는 손실을 줄이기 위해 w와 b를 어느 방향으로 얼마나 조정해야 할지 알려준다. 예를 들어, w.grad가 양수라면, w를 감소시켜야 손실이 줄어든다는 의미(손실값을 줄이는 방향). PyTorch는 이 복잡한 과정을 loss.backward() 한 줄로 처리
+
+* requires_true = True로 설정한 이유: 이 텐서들이 학습의 대상이기 때문. Loss를 줄이기 위해 w와 b를 조금씩 수정하는 과정이다. 이때 얼마나 수정할지 결정하려면 미분값이 필수인데, 이를 자동으로 구하기 위해 설정한다.
+
+* $z = 2x^3$ x가 3일 때 z.backward()를 호출하면 x.grad는 54
