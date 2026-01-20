@@ -37,3 +37,96 @@ Y = w_true * X + b_true + torch.randn(100)*2
 실제 데이터처럼 오차가 존재하는 상황에서도 본질적인 패턴($w, b$)을 찾도록 하기 위해 의도적으로 노이즈를 추가
 
 ### 2. 모델 설계
+PyTorch에서 모델을 정의할 때는 torch.nn.Module 클래스를 상속받아 사용한다. 이 클래스는 모델의 파라미터와 구조를 관리하는 데 필요한 기본 기능을 제공한다.
+```
+import torch.nn as nn
+
+class LinearRegression(nn.Module):
+    def __init__(self):
+      super().__init__()
+      # 학습할 파라미터 w와 b를 정의
+      # nn.Parameter는 텐서를 모델의 파라미터로 등록하는 특별한 클래스
+      self.w = nn.Parameter(torch.randn(1, requires_grad=True))
+      self.b = nn.Parameter(torch.randn(1, requires_grad=True))
+
+    def forward(self, x):
+      # 모델의 순전파를 정의
+      # 입력 x에 대해 예측값 y_pred를 계산
+      return self.w * x + self.b
+
+# 모델 객체 생성
+model = LinearRegression()
+```
+__init__ 함수에서는 모델이 학습해야 할 파라미터(w, b)를 정의하고, forward 함수에서는 입력 x가 모델을 통과하여 최종 예측값 y_pred를 만드는 과정을 정의한다.
+
+### 3. 손실 함수 및 옵티마이저 정의
+* 손실함수(Loss Function): 모델의 예측값과 실제 정답 사이의 오차를 계산하는 함수. 선형 회귀에서는 주로 평균 제곱오차(Mean Squared Error, MSE)를 사용한다. PyTorch에서는 nn.MSELoss로 제공된다.
+* 옵티마이저(Optimizer): 손실을 최소화하기 위해 모델의 파라미터(w, b)를 업데이트하는 알고리즘. 여기서는 확률적 경사 하강법(Stochastic Gradient Descent, SGD)을 사용한다. PyTorch에서는 torch.optim.SGD로 제공된다.
+```
+import torch.optim as optim
+
+#손실 함수 정의
+loss_fn = nn.MSELoss()
+
+#옵티마이저 정의
+#model.parameters()는 모델의 모든 학습 가능한 파라미터를 반환한다.
+# lr (learnig rate): 한 번에 파라미터를 얼마나 크게 업데이트할지 결정하는 학습률
+optimizer = optim.SGD(model.parameters(), lr=0.01)
+```
+
+### 4. 모델 학습
+모델을 반복적으로 학습시키는 과정을 에포크(Epoch)라고 부른다. 한 번의 에포크는 전체 데이터를 한 바퀴 도는 것을 의미
+```
+num_epochs = 1000
+
+for epoch in range(num_epochs):
+  #1. 순전파
+  y_pred = model(X)
+
+  #2. 손실 계산
+  loss = loss_fn(y_pred, Y)
+
+  #3. 역전파
+  #옵티마이저에 저장된 이전 기울기를 초기화
+  optimizer.zero_grad()
+  #손실에 대한 모든 파라미터의 미분값(기울기)을 계산
+  loss.backward()
+
+  #4. 파라미터 업데이트
+  #계산된 기울기를 사용하여 파라미터를 업데이트
+  optimizer.step()
+
+  # 100 에포크마다 손실 출력
+  if (epoch+1) % 100 == 0:
+    print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
+# Epoch [100/1000], Loss: 4.0750
+# Epoch [200/1000], Loss: 4.0516
+# Epoch [300/1000], Loss: 4.0511
+# Epoch [400/1000], Loss: 4.0511
+# Epoch [500/1000], Loss: 4.0511
+# Epoch [600/1000], Loss: 4.0511
+# Epoch [700/1000], Loss: 4.0511
+# Epoch [800/1000], Loss: 4.0511
+# Epoch [900/1000], Loss: 4.0511
+# Epoch [1000/1000], Loss: 4.0511
+```
+### 5. 모델 평가
+학습이 끝난 후, 모델의 최종 파라미터(w, b)와 실제 파라미터(w_true, b_true)를 비교하여 모델이 잘 학습되었는지 확인
+```
+# 학습된 모델의 최종 파라미터
+print("\n--- 최종 파라미터 ---")
+print(f"학습된 w: {model.w.item():.4f}")
+print(f"학습된 b: {model.b.item():.4f}")
+print("---------------------")
+print(f"실제 w: {w_true}")
+print(f"실제 b: {b_true}")
+```
+| 구분 | 실제 값 (True) | 학습된 값 (Learned) |
+| :--- | :--- | :--- |
+| **Weight (w)** | 2.0 | 2.0069 |
+| **Bias (b)** | 1.0 | 0.9225 |
+
+### 6. 학습 결과 (Training Result)
+데이터에 노이즈를 추가하여 실제 환경과 유사하게 만들었음에도 불구하고, 모델이 정답에 가깝게 수렴했다.
+
+> **결론:** 무작위로 초기화된 파라미터들이 backward()를 통한 Gradient Descent(경사 하강법) 과정을 거쳐 최적의 값으로 업데이트되었습니다.
