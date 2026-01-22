@@ -8,7 +8,7 @@ path = kagglehub.dataset_download("biaiscience/dogs-vs-cats")
 ```
 ## 2. 데이터 전처리 및 증강
 * 크기 통일: 사전 훈련 모델(예: ResNet)은 특정 크기(예: 224x224)의 이미지를 입력으로 받도록 설계되어있다. 따라서 모든 이미지를 이 크기로 통일 해야함
-* 정규화: 대부분의 딥러닝 모델은 픽셀 값이 0~1 또는 -1~1 사이인 정규화된 입력값을 선호한다. ImageNet으로 학습된 모델은 ImageNet 평균과 표준편차로 정규화 하는 것이 일반적이다.
+* 정규화: 대부분의 딥러닝 모델은 픽셀 값이 0 ~ 1 또는 -1 ~ 1 사이인 정규화된 입력값을 선호한다. ImageNet으로 학습된 모델은 ImageNet 평균과 표준편차로 정규화 하는 것이 일반적이다.
 ```
 import torchvision.transforms as transforms
 
