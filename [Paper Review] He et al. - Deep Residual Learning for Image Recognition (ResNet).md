@@ -20,6 +20,7 @@
 <img width="504" height="179" alt="image" src="https://github.com/user-attachments/assets/28d76573-7e37-4a8c-8937-3757eb967d98" />
 <br>
 *Figure 1. Training error(left) and test error(right) on CIFAR-10 with 20-layer and 56-layer "plain" network*
+<br>
 * 56층 모델이 20층 모델보다 Training Error 자체가 더 높게 나타난다. 즉, 모델이 학습 자체를 못하고 있다는 증거이다.
 
 ### 1.3 The Hypothesis
@@ -37,6 +38,7 @@
 <img width="320" height="168" alt="image" src="https://github.com/user-attachments/assets/229559e0-a4d3-48a6-83cb-897fce295f3b" />
 <br>
 *Figure2. Residual learning: a building block*
+<br>
 * 하나 이상의 레이어를 건너뛰고 입력값(x)을 레이어의 출력값에 직접 더해준다.
 * 추가적인 파라미터나 계산 복잡도를 늘리지 않는다는 장점이 있다.
 * 기존읜 경사하강법(SGD)과 오차 역전파를 그대로 사용할 수 있으며, Caffe같은 라이브러리에서도 별도의 수정 없이 쉽게 구현 가능하다.
