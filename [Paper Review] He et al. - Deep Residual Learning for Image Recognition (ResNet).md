@@ -66,11 +66,34 @@
 * GoogLeNet(Inception): 인셉션 구조에도 shortcut branch가 포함되어 있다.
 * Highway Networks와의 차이: ResNet과 가장 유사한 동시대 연구는 'Highway Networks'이지만, 결정적인 차이가 있다.
   * Highway Networks: 데이터에 따라 지름길을 열고 닫는 **Gating**함수가 있고 파라미터가 필요하다. 게이트가 닫히면 residual을 학습하지 않게 된다.
-  * ResNet: 파라미터가 전혀 없는 Identity Shortcut을 사용하여 항상 정보가 흐르게 하여, 항상 resudual함수만을 학습한다. 또한 Highway Networks는 층이 아주 깊어질 때(100층 이상)의 성능 향상을 증명하지 못했다.
+  * ResNet: 파라미터가 전혀 없는 Identity Shortcut을 사용하여 항상 정보가 흐르게 하여, 항상 residual함수만을 학습한다. 또한 Highway Networks는 층이 아주 깊어질 때(100층 이상)의 성능 향상을 증명하지 못했다.
 
 
+## 3. Deep Residual Learning
+### 3.1 Residual Learning
+H(x)를 네트워크가 해결해야할 최적의 매핑이라고 정의할 때, 
+<br>
+* 핵심 가설: 여러 비선형 레이어가 복잡한 함수 H(x)를 직접 학습하는 것보다, residual 함수인 $F(x) := H(x) - x$를 학습하는 것이 훨씬 쉽다.
+* 만약 Identity 매핑이 최적이라면, 레이어들은 단순히 가중치를 0으로 수렴시켜 F(x) = 0을 만들면 된다. 이는 아무것도 없는 상태에서 H(x) = x가 되도록 정교하게 가중치를 맞누는 것보다 훨씬 단순한 최적화 문제이다.
 
+### 3.2 Identity Mapping by Shortcut
+이 가설을 실제 구조로 만든 것이 바로 Residual Block이다.
+<br>
+**$$y = F(x, \{W_i\}) + x$$**
+* x: 레이어의 입력
+* $$F(x, \{W_i\})$$: 학습해야 할 Residual 매핑
+* 입력 x를 레이어의 끝단에서 단순히 더해준다.
+* 파라미터가 늘어나지 않고, 연산량 증가도 거의 없으며, 역전파 시 기울기가 x를 타고 그대로 앞단까지 전달된다.
+* 입력 x와 레이어의 출력 F(x)의 차원이 다를 때(예: Stride를 사용해 크기가 줄어든 경우)는
+  * Zero-padding: 부족한 차원을 0으로 채워서 더함(파라미터 증가 없음).
+  * Projection Shortcut($W_s$): 1x1 컨볼루션을 사용하여 차원을 강제로 맞춘다
+    * **$y = F(x, \{W_i\}) + W_sx$**
 
+### 3.3 Network Architectures
+* Plain Network: VGG의 철학을 따라 단순히 3x3 컨볼루션을 쌓은 모델(지름길 없음)
+* Residual Network: 위 Plain 구조에 2개의 레이어마다 Shortcut을 추가한 모델
+
+  
 
 
 
