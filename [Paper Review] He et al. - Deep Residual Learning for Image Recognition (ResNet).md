@@ -33,6 +33,9 @@
 * 기존처럼 레이어가 목표 매핑 (H(x))을 직접 학습하게 하는 대신, Residual Mapping을 학습하도록 구조를 바꿨다.
 * 잔차 함수인 F(x) = H(x) - x를 학습한다. 결과 적으로 원래의 목표 F(x) + x를 구하는 것이 된다.
 * 이렇게 한면 만약 Identity Mapping이 최적이라면, 레이어들은 단순히 가중치를 0으로 수렴 시키기만 하면 되므로 학습이 훨씬 쉬워진다.
+* x: 레이어에 들어가기 전의 원본 데이터
+* F(x): x가 여러 개의 레이어(Convolution, Batch Norm 등)를 통화하며 계산된 결과물
+* H(x): 최종 답
 
 #### 2. Shortcut Connection
 * 이러한 F(x) + x 구조는 Shortcut Connection을 통해 구현된다.
@@ -88,12 +91,51 @@ H(x)를 네트워크가 해결해야할 최적의 매핑이라고 정의할 때,
   * Zero-padding: 부족한 차원을 0으로 채워서 더함(파라미터 증가 없음).
   * Projection Shortcut($W_s$): 1x1 컨볼루션을 사용하여 차원을 강제로 맞춘다
     * **$y = F(x, \{W_i\}) + W_sx$**
+  ```
+  def forward(self, x):
+  identity = x # 입력 x를 따로 저장
 
+  out = self.conv1(x)
+  out = self.bn1(out)
+  out = self.relu(out)
+
+  out = self.conv2(out)
+  out = self.bn2(out)
+
+  # F(x) + x
+  out += identity
+
+  out = self.relu(out)
+
+  return out
+  ```
+* identity에 x를 따로 저장해서 나중에 더해주지 않는다면, 레이어들은 입력 x를 완전히 새로운 H(x)로 통째로 바꾸는 어려운 작업을 해야한다.
+* H(x)
 ### 3.3 Network Architectures
 * Plain Network: VGG의 철학을 따라 단순히 3x3 컨볼루션을 쌓은 모델(지름길 없음)
+  * 층이 깊어질 수록 정답을 찾는 과정이 너무 복잡해져 학습이 제대로 안되는 성능저하 문제 발생
 * Residual Network: 위 Plain 구조에 2개의 레이어마다 Shortcut을 추가한 모델
+  * 2개의 레이어를 건너뛰는 이유는 레이어가 최소한의 의미있는 잔차를 만들어 낼 수 있는 공간을 확보해주기 위함.
+  * 레이어가 정답(H(x))을 통째로 만드는 대신, 입력(x)과 정답의 차이인 F(x)만 만들게 해, F(x) = H(x) - x라는 식을 만들어 레이어의 임무를 정답을 만드는 것에서 부족한 차이를 메우는 것으로 재정의한 것이다.
+<img width="494" height="1128" alt="image" src="https://github.com/user-attachments/assets/c9d56c69-b91f-4376-8600-21d613e877eb" />
+*Example network architectures for ImageNet. Left: the VGG-19 model Middle: a plain network with 34 parameter layers. Right: a residual network with 34 parameter layers*
 
+### 3.4 Implementation
+1. Data Augmentation
+   * Scale Augmentation: 이미지의 짧은 쪽 길이를 256~480 사이에서 랜덤하게 조절
+   * Cropping & Flipping: 위 이미지에서 $224 \times 224$ 크기를 랜덤하게 잘라내거나 좌우 반전을 수행
+   * Color Augmentation: 표준적인 색상 변형 기법을 적용
+   * Normalization: 픽셀별 평균값을 빼주는 전처리를 수행
   
-
+2. Training Strategy
+   * Batch Normalization (BN): 모든 합성곱(Conv) 직후, 그리고 활성화 함수(ReLU) 직전에 적용
+   * Optimizer: SGD(Stochastic Gradient Descent)를 사용하며, Momentum은 0.9, Weight Decay(L2 규제)는 0.0001로 설정
+   * Learning Rate (LR): 0.1에서 시작하여, 에러가 더 줄어들지 않고 정체(plateau)되면 10으로 나누어(0.01, 0.001...) 줄여나감
+   * No Dropout: Batch Normalization을 사용하기 때문에 드롭아웃은 사용하지 않는다.
+   * Iterations: 최대 $60 \times 10^4$번의 반복 학습을 수행하며 미니배치 크기는 256
+  
+3. Testing
+   * 10-crop testing: 하나의 이미지를 중앙, 모서리 등 10가지 방식으로 잘라 테스트한 뒤 평균을 낸다.
+   * Multi-scale testing: 이미지를 5가지 크기({224, 256, 384, 480, 640})로 리사이징하여 각각 점수를 매긴 뒤 평균을 내어 정확도를 극대화한다.
 
 
