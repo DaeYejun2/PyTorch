@@ -1,4 +1,5 @@
 # Deep Residual Learning for Image Recognition
+##### Reference: https://arxiv.org/abs/1512.03385
 
 ## abstract
 * Deeper neural networks are more difficult to train.
