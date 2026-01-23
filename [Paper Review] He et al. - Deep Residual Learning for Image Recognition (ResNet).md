@@ -56,7 +56,17 @@
 
 ## 2. Related Work
 ### 2.1 Residual Representations
+* VLAD & Fisher Vector: 이미지 검색이나 분류에서 쓰이는 이 기법들은 dictionary와의 차이를 인코딩하는 방식이다. 원래 벡터를 그대로 쓰는 것보다 residual(잔차)를 쓰는 것이 더 효과적이라는 점이 이미 증명되어 있다.
+* Multigrid Method: 편미분 방정식(PDE)을 풀 때 사용하는 이 방법은 문제를 여러 스케일로 나누어 풀며, 각 하위 문제는 거친 스케일과 세밀한 스케일 사이의 residual solution을 담당한다.
+* 결론: 이러한 사례들은 문제를 residual형태로 재구성 하는 것이 최적화를 훨씬 단순하게 만들 수 있음을 시사한다.
 
+### 2.2 Shortcut Connections
+* 레이어를 건너뛰는 shortcut 구조 역시 완전히 새로운 것은 아니지만, ResNet만의 차별점이 존재한다.
+* Early Practice: 초기 다층 퍼셉트론(MLP) 연구에서도 입력층과 출력층을 집접 연결하는 선형 레이어를 추가하곤 했다.
+* GoogLeNet(Inception): 인셉션 구조에도 shortcut branch가 포함되어 있다.
+* Highway Networks와의 차이: ResNet과 가장 유사한 동시대 연구는 'Highway Networks'이지만, 결정적인 차이가 있다.
+  * Highway Networks: 데이터에 따라 지름길을 열고 닫는 **Gating**함수가 있고 파라미터가 필요하다. 게이트가 닫히면 residual을 학습하지 않게 된다.
+  * ResNet: 파라미터가 전혀 없는 Identity Shortcut을 사용하여 항상 정보가 흐르게 하여, 항상 resudual함수만을 학습한다. 또한 Highway Networks는 층이 아주 깊어질 때(100층 이상)의 성능 향상을 증명하지 못했다.
 
 
 
