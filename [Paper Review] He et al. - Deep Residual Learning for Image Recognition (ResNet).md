@@ -118,6 +118,7 @@ H(x)를 네트워크가 해결해야할 최적의 매핑이라고 정의할 때,
   * 2개의 레이어를 건너뛰는 이유는 레이어가 최소한의 의미있는 잔차를 만들어 낼 수 있는 공간을 확보해주기 위함.
   * 레이어가 정답(H(x))을 통째로 만드는 대신, 입력(x)과 정답의 차이인 F(x)만 만들게 해, F(x) = H(x) - x라는 식을 만들어 레이어의 임무를 정답을 만드는 것에서 부족한 차이를 메우는 것으로 재정의한 것이다.
 <img width="494" height="1128" alt="image" src="https://github.com/user-attachments/assets/c9d56c69-b91f-4376-8600-21d613e877eb" />
+<br>
 *Example network architectures for ImageNet. Left: the VGG-19 model Middle: a plain network with 34 parameter layers. Right: a residual network with 34 parameter layers*
 
 ### 3.4 Implementation
