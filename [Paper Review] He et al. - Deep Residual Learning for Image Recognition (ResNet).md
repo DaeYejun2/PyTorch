@@ -19,9 +19,9 @@
 * 네트워크가 어느 정도 깊어지면 정확도가 Saturate(포화)된 후 급격히 떨어지는 현상이 발견되었다.
 * 이 현상은 Overfitting 때문이 아님을 알 수 있다.
 <img width="504" height="179" alt="image" src="https://github.com/user-attachments/assets/28d76573-7e37-4a8c-8937-3757eb967d98" />
-<br>
+
 *Figure 1. Training error(left) and test error(right) on CIFAR-10 with 20-layer and 56-layer "plain" network*
-<br>
+
 * 56층 모델이 20층 모델보다 Training Error 자체가 더 높게 나타난다. 즉, 모델이 학습 자체를 못하고 있다는 증거이다.
 
 ### 1.3 The Hypothesis
