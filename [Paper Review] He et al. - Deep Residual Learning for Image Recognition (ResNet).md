@@ -383,7 +383,7 @@ plt.show()
 
 ### 4.2 CIFAR-10 and Analysis
 <img width="804" height="215" alt="image" src="https://github.com/user-attachments/assets/27cf68d2-0e4a-4091-8a84-3fb675227dbc" />
-<br>
+
 *Figure 6. Training on CIFAR-10. Dashed lines denote training error, and bold lines denote testing error. Left: plain networks. The error of plain-110 is higher than 60% and not displayed. Middle: ResNets. Right: ResNets with 110 and 1202 layers.*
 
 1. 실험 설정
@@ -399,8 +399,9 @@ plt.show()
    * 하지만 Test Error는 110층 모델(6.43%)보다 1,202층 모델(7.93%)이 더 높게 나왔다.
    * CIFAR-10 규모에 비해 모델이 너무 커서 발생한 Overfitting 때문이며, 이는 Regularization이 추가로 필요함을 시사한다.
 <img width="383" height="112" alt="image" src="https://github.com/user-attachments/assets/918779b7-feea-4f4f-9bd1-3c2e94c1df0b" />
+
 <img width="372" height="88" alt="image" src="https://github.com/user-attachments/assets/88ccbaff-7611-4a49-998e-d854e1881f15" />
-<br>
+
 4. 사물 탐지로의 확장
    * PASCAL VOC: 기존 VGG-16 기반보다 약 3% 이상 높은 성능을 보인다
    * MS COCO: 사물 탐지 성능이 VGG-16 대비 상대적으로 28% 향상되었다.
