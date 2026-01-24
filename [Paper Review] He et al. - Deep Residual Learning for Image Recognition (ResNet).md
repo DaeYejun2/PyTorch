@@ -139,4 +139,105 @@ H(x)를 네트워크가 해결해야할 최적의 매핑이라고 정의할 때,
    * 10-crop testing: 하나의 이미지를 중앙, 모서리 등 10가지 방식으로 잘라 테스트한 뒤 평균을 낸다.
    * Multi-scale testing: 이미지를 5가지 크기({224, 256, 384, 480, 640})로 리사이징하여 각각 점수를 매긴 뒤 평균을 내어 정확도를 극대화한다.
 
+## 4. Experiments
+*1,000개의 클래스를 가진 ImageNet 2012 데이터셋으로 성능을 검증*
+### Plain Networks
+```
+import torch
+import torch.nn as nn
+
+class PlainBlock(nn.Module):
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(PlainBlock, self).__init__()
+        # 3x3 convolution 1
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        
+        # 3x3 convolution 2
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+
+    def forward(self, x):
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        
+        out = self.conv2(out)
+        out = self.bn2(out)
+        
+        # 지름길(Shortcut) 없이 바로 ReLU 통과
+        out = self.relu(out)
+        return out
+```
+
+### Residual Networks
+```
+class ResidualBlock(nn.Module):
+  def __init__(self, in_channels, out_channels, stride=1):
+    super(ResidualBlock, self).__init__()
+
+    self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+    self.bn1 = nn.BatchNorm2d(out_channels)
+    self.relu = nn.ReLU(inplace=True)
+
+    self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+    self.bn2 = nn.BatchNorm2(out_channels)
+
+    # 차원이 변할 때(stride > 1) 입력을 맞춰주기 위한 shortcut
+    self.shortcut = nn.Sequential()
+    if stride != 1 or in_channels != out_channels:
+      self.shortcut = nn.Sequential(
+          nn.Conv2(in_channels, out_channels, Kernel_size=1, stride=stride, bias=False),
+          nn.BatchNorm2d(out_channels)
+      )
+
+  def forward(self, x):
+    identity = x
+
+    out = self.conv1(x)
+    out = self.bn1(out)
+    out = self.relu(out)
+
+    out = self.conv2(out)
+    out = self.bn2(out)
+
+    out += self.shortcut(identity)
+
+    out - self.relu(out)
+    return out
+```
+<br>
+```
+self.shortcut = nn.Sequential()
+    if stride != 1 or in_channels != out_channels:
+      self.shortcut = nn.Sequential(
+          nn.Conv2(in_channels, out_channels, Kernel_size=1, stride=stride, bias=False),
+          nn.BatchNorm2d(out_channels)
+```
+<br>
+* 차원 맞추기 로직
+* 입력값 x를 출력값에 더해주려면 두 값의 크기(가로, 세로, 채널 수)가 반드시 같아야 한다. 그런데 층을 지나다 보면 이 크기가 변할 때가 있는데, 그 때 사용하는 코드
+* ResNet은 모든 블록에서 똑같은 크기를 유지하지 않는다. 성능을 위해 중간중간 다음과 같은 변화를 준다
+* 이미지 크기 축소: stride=2를 써서 가로,세로를 절반으로 줄인다
+* 채널 수 증가: 더 깊은 정보를 담기 위해 채널을 64에서 128로 늘린다.
+* self.shortcut = nn.Sequential(): 기본적으로 아무것도 안하는 코드. 크기가 같을 때는 그냥 통과하면되기 때문
+* if stride != 1 or in_channels != out_channels: : 크기가 줄어들었거나 채널수가 변했다
+* nn.Conv2d(..., kernel_size=1, stride=stride, ...): 1x1 Convolution을 사용하여 x의 크기를 조절한다
+* stride=stride: out이 절반으로 줄었다면, x도 똑같이 절반으로 줄여준다
+* out_channels: out의 채널이 늘어났다면 x의 채널도 똑같이 늘려준다.
+<br>
+<img width="718" height="325" alt="image" src="https://github.com/user-attachments/assets/1b0893be-9eec-4e4d-bc49-5bb5d227d490" />
+<br>
+모델의 깊이에 따른 세부 레이어 구성표. 본 프로젝트는 이 표를 바탕으로 18층과 34층 모델을 구현.
+<br>
+
+<img width="909" height="288" alt="image" src="https://github.com/user-attachments/assets/7ccd141a-44a1-4163-a691-ec96e78028b7" />
+<br>
+Plain 모델에서는 깊이가 깊어질 수록 오차가 커지는 문제가 발생하지만, ResNet은 Shortcut path를 통해 이를 해결했다.
+<br>
+<img width="316" height="93" alt="image" src="https://github.com/user-attachments/assets/b198787c-9332-4fce-8686-c299ae1ddfac" />
+<br>
+*error (%, 10-crop testing) on ImageNet validation.*
+
 
