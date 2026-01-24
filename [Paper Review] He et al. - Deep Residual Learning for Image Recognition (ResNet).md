@@ -233,6 +233,7 @@ self.shortcut = nn.Sequential()
 <img width="909" height="288" alt="image" src="https://github.com/user-attachments/assets/7ccd141a-44a1-4163-a691-ec96e78028b7" />
 
 *Figure 4. Training on ImageNet*
+<br>
 Plain 모델에서는 깊이가 깊어질 수록 오차가 커지는 문제가 발생하지만, ResNet은 Shortcut path를 통해 이를 해결했다.
 <br>
 
