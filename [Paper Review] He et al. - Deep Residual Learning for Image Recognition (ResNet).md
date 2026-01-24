@@ -237,5 +237,14 @@ Plain 모델에서는 깊이가 깊어질 수록 오차가 커지는 문제가 �
 <img width="316" height="93" alt="image" src="https://github.com/user-attachments/assets/b198787c-9332-4fce-8686-c299ae1ddfac" />
 <br>
 *error (%, 10-crop testing) on ImageNet validation.*
-
-
+<img width="346" height="296" alt="image" src="https://github.com/user-attachments/assets/e1ced55e-0fcc-4494-9608-861013d49395" />
+<br>
+* Table 3. Error rates (%, 10-crop testing) on ImageNet validation. VGG-16 is based on our test. ResNet-50/101/152 are of option B that only uses projections for increasing dimensions.
+* A: 차원이 증가할 때만 0을 채움
+* B: 차원이 증가할 때만 1x1 Conv 사용(본 프로젝트에서 구현한 방식)
+* C: 모든 지름길에 1x1 Conv 사용
+* B가 A보다 우수하며, C는 B와 비슷하지만 연산 효율성을 위해 B를 표준으로 채택한다.
+```
+코드
+```
+CIFAR-10 데이터를 사용해 Plain-34와 ResNet-34 모델을 학습시키고 성능 비교
