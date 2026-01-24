@@ -208,13 +208,6 @@ class ResidualBlock(nn.Module):
     return out
 ```
 <br>
-```
-self.shortcut = nn.Sequential()
-    if stride != 1 or in_channels != out_channels:
-      self.shortcut = nn.Sequential(
-          nn.Conv2(in_channels, out_channels, Kernel_size=1, stride=stride, bias=False),
-          nn.BatchNorm2d(out_channels)
-```
  
 <br>
 * 차원 맞추기 로직
