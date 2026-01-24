@@ -247,9 +247,9 @@ Plain 모델에서는 깊이가 깊어질 수록 오차가 커지는 문제가 �
 
 
 * Table 3. Error rates (%, 10-crop testing) on ImageNet validation. VGG-16 is based on our test. ResNet-50/101/152 are of option B that only uses projections for increasing dimensions.
-* A: 차원이 증가할 때만 0을 채움
-* B: 차원이 증가할 때만 1x1 Conv 사용(본 프로젝트에서 구현한 방식)
-* C: 모든 지름길에 1x1 Conv 사용
+* Option A: 차원이 증가할 때만 0을 채움
+* Option B: 차원이 증가할 때만 1x1 Conv 사용(본 프로젝트에서 구현한 방식)
+* Option C: 모든 지름길에 1x1 Conv 사용
 * B가 A보다 우수하며, C는 B와 비슷하지만 연산 효율성을 위해 B를 표준으로 채택한다.
 #### CIFAR-10 데이터를 사용해 Plain-34와 ResNet-34 모델을 학습시키고 성능 비교
 ```
@@ -380,3 +380,27 @@ plt.show()
 *왜 초기 10Epoch에서 ResNet의 Loss가 더 높게 나타났는가?*
 * Figure 4 그래프를 보면, 학습 극초반에는 Plain과 ResNet의 오차 곡선이 교차하거나 Plain이 일시적으로 낮게 유지되는 구간이 존재한다.
 * ResNet의 진정한 성능은 학습이 더 진행되어 Plain 모델의 오차가 정체되는 시점에서, Shortcut을 통해 기울기 소실을 방지하며 오차를 끝까지 낮출 때 증명된다.
+
+### 4.2 CIFAR-10 and Analysis
+<img width="804" height="215" alt="image" src="https://github.com/user-attachments/assets/27cf68d2-0e4a-4091-8a84-3fb675227dbc" />
+*Figure 6. Training on CIFAR-10. Dashed lines denote training error, and bold lines denote testing error. Left: plain networks. The error of plain-110 is higher than 60% and not displayed. Middle: ResNets. Right: ResNets with 110 and 1202 layers.*
+
+1. 실험 설정
+   * ImageNet과는 다른 CIFAR-10만의 특화된 설정을 사용
+   * 입력 크기: 32x32 이미지 사용
+   * 레이어 구성: 처음에 3x3 Conv 한 번, 그 뒤에 2n개의 레이어를 가진 세 가지 스택(이미지 크기 32, 16, 8)을 쌓아 총 6n+2개의 레이어로 구성
+   * Shortcut: 모든 지름길은 Identity Shortcut을 사용(Option A)
+2. 분석 1: 극단적인 깊이에서의 성능
+   * Plain Nets의 한계: 층이 깊어질 수록(20 -> 32 -> 44 -> 56) 에러율이 점점 높아지는 성능 저하 문제가 명확히 드러났다.
+   * 반면 ResNet은 층이 깊어질 수록 에러율이 낮아 졌으며, 110층 모델에서도 성능 향상이 지속되었다.
+3. 분석 2: 1,000층 이상
+   * 학습은 성공적이었고(오차가 낮게 유지), 110층 모델과 유사한 Training Error를 보였다.
+   * 하지만 Test Error는 110층 모델(6.43%)보다 1,202층 모델(7.93%)이 더 높게 나왔다.
+   * CIFAR-10 규모에 비해 모델이 너무 커서 발생한 Overfitting 때문이며, 이는 Regularization이 추가로 필요함을 시사한다.
+<img width="383" height="112" alt="image" src="https://github.com/user-attachments/assets/918779b7-feea-4f4f-9bd1-3c2e94c1df0b" />
+<img width="372" height="88" alt="image" src="https://github.com/user-attachments/assets/88ccbaff-7611-4a49-998e-d854e1881f15" />
+4. 사물 탐지로의 확장
+   * PASCAL VOC: 기존 VGG-16 기반보다 약 3% 이상 높은 성능을 보인다
+   * MS COCO: 사물 탐지 성능이 VGG-16 대비 상대적으로 28% 향상되었다.
+   * ResNet으로 배운 특징이 매우 강력하며, 어떤 비전 작업에 가져다 써도 성능이 오는다는 것을 의미한다.
+
