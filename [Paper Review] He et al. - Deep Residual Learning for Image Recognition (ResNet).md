@@ -376,7 +376,7 @@ plt.show()
 ```
 <img width="307" height="653" alt="image" src="https://github.com/user-attachments/assets/4105b19d-ac6c-4b16-a50a-690398cc7a79" />
 <img width="846" height="470" alt="image" src="https://github.com/user-attachments/assets/4055cc81-bac4-416b-ab99-05825e1a5ee2" />
-<br>
-* 왜 초기 10Epoch에서 ResNet의 Loss가 더 높게 나타났는가?
+
+*왜 초기 10Epoch에서 ResNet의 Loss가 더 높게 나타났는가?*
 * Figure 4 그래프를 보면, 학습 극초반에는 Plain과 ResNet의 오차 곡선이 교차하거나 Plain이 일시적으로 낮게 유지되는 구간이 존재한다.
 * ResNet의 진정한 성능은 학습이 더 진행되어 Plain 모델의 오차가 정체되는 시점에서, Shortcut을 통해 기울기 소실을 방지하며 오차를 끝까지 낮출 때 증명된다.
