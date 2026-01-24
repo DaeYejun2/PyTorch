@@ -207,9 +207,13 @@ class ResidualBlock(nn.Module):
     out - self.relu(out)
     return out
 ```
-<br>
- 
-<br>
+```
+self.shortcut = nn.Sequential()
+    if stride != 1 or in_channels != out_channels:
+      self.shortcut = nn.Sequential(
+          nn.Conv2(in_channels, out_channels, Kernel_size=1, stride=stride, bias=False),
+          nn.BatchNorm2d(out_channels)
+```
 * 차원 맞추기 로직
 * 입력값 x를 출력값에 더해주려면 두 값의 크기(가로, 세로, 채널 수)가 반드시 같아야 한다. 그런데 층을 지나다 보면 이 크기가 변할 때가 있는데, 그 때 사용하는 코드
 * ResNet은 모든 블록에서 똑같은 크기를 유지하지 않는다. 성능을 위해 중간중간 다음과 같은 변화를 준다
