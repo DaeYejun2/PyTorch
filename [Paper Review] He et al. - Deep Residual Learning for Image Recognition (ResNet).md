@@ -250,8 +250,132 @@ Plain 모델에서는 깊이가 깊어질 수록 오차가 커지는 문제가 �
 * B: 차원이 증가할 때만 1x1 Conv 사용(본 프로젝트에서 구현한 방식)
 * C: 모든 지름길에 1x1 Conv 사용
 * B가 A보다 우수하며, C는 B와 비슷하지만 연산 효율성을 위해 B를 표준으로 채택한다.
+#### CIFAR-10 데이터를 사용해 Plain-34와 ResNet-34 모델을 학습시키고 성능 비교
+```
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torchvision
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+
+# 1. 모델 블록 정의 (Plain vs Residual)
+class Block(nn.Module):
+  def __init__(self, in_channels, out_channels, stride=1, is_plain=False):
+    super(Block, self).__init__()
+    self.is_plain = is_plain
+    self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+    self.bn1 = nn.BatchNorm2d(out_channels)
+
+    self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=False)
+    self.bn2 = nn.BatchNorm2d(out_channels)
+    self.relu = nn.ReLU(inplace=True)
+
+    self.shortcut = nn.Sequential()
+    if not is_plain or (stride != 1 or in_channels != out_channels):
+      self.shortcut = nn.Sequential(
+          nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, bias=False),
+          nn.BatchNorm2d(out_channels)
+      )
+  
+  def forward(self, x):
+    identity = x
+    out = self.relu(self.bn1(self.conv1(x)))
+    out = self.bn2(self.conv2(out))
+    if not self.is_plain:
+      out += self.shortcut(identity)
+
+    return out
+
+# 2. ResNet/Plain 모델 구조 정의
+class ResNetOrPlain(nn.Module):
+  def __init__(self, block, num_blocks, num_classes=10, is_plain=False):
+    super(ResNetOrPlain, self).__init__()
+    self.in_channels = 64
+    self.is_plain = is_plain
+    self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+    self.bn1 = nn.BatchNorm2d(64)
+    self.relu = nn.ReLU(inplace=True)
+    # Table 1의 34-layer 구성: [3, 4, 6, 3]
+    self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
+    self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
+    self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
+    self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+    self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+    self.fc = nn.Linear(512, num_classes)
+
+  def _make_layer(self, block, out_channels, num_blocks, stride):
+    stride = [stride] + [1]*(num_blocks-1)
+    layers = []
+    for s in stride:
+      layers.append(block(self.in_channels, out_channels, s, self.is_plain))
+      self.in_channels = out_channels
+    return nn.Sequential(*layers)
+
+  def forward(self, x):
+    x = self.relu(self.bn1(self.conv1(x)))
+    x = self.layer4(self.layer3(self.layer2(self.layer1(x))))
+    x = self.avgpool(x)
+    return self.fc(torch.flatten(x, 1))
+```
 
 ```
-코드
+import matplotlib.pyplot as plt
+
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+])
+train_set = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+train_loader = DataLoader(train_set, batch_size=128, shuffle=True)
+
+def train_and_get_history(model, train_loader, epochs=10):
+  model.to(device)
+  criterion = nn.CrossEntropyLoss()
+  optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0001)
+
+  history = []
+  model.train()
+  
+  for epoch in range(epochs):
+    running_loss = 0.0
+    for i, (inputs, labels) in enumerate(train_loader):
+      inputs, labels = inputs.to(device), labels.to(device)
+      optimizer.zero_grad()
+      outputs = model(inputs)
+      loss = criterion(outputs, labels)
+      loss.backward()
+      optimizer.step()
+      running_loss += loss.item()
+
+    avg_loss = running_loss / len(train_loader)
+    history.append(avg_loss)
+    print(f'Epoch {epoch+1}, Loss: {avg_loss:.4f}')
+
+  return history
+
+print("--- Training Plain-34 ---")
+plain_34 = ResNetOrPlain(Block, [3, 4, 6, 3], is_plain=True) #
+plain_history = train_and_get_history(plain_34, train_loader, epochs=10)
+
+print("\n--- Training ResNet-34 ---")
+resnet_34 = ResNetOrPlain(Block, [3, 4, 6, 3], is_plain=False) #
+resnet_history = train_and_get_history(resnet_34, train_loader, epochs=10)
+
+plt.figure(figsize=(10, 5))
+plt.plot(range(1, 11), plain_history, label='Plain-34', color='red', marker='o')
+plt.plot(range(1, 11), resnet_history, label='ResNet-34', color='blue', marker='o')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training Loss: Plain vs ResNet (CIFAR-10)')
+plt.legend()
+plt.grid(True)
+plt.show()
 ```
-CIFAR-10 데이터를 사용해 Plain-34와 ResNet-34 모델을 학습시키고 성능 비교
+<img width="307" height="653" alt="image" src="https://github.com/user-attachments/assets/4105b19d-ac6c-4b16-a50a-690398cc7a79" />
+<img width="846" height="470" alt="image" src="https://github.com/user-attachments/assets/4055cc81-bac4-416b-ab99-05825e1a5ee2" />
+<br>
+* 왜 초기 10Epoch에서 ResNet의 Loss가 더 높게 나타났는가?
+* Figure 4 그래프를 보면, 학습 극초반에는 Plain과 ResNet의 오차 곡선이 교차하거나 Plain이 일시적으로 낮게 유지되는 구간이 존재한다.
+* ResNet의 진정한 성능은 학습이 더 진행되어 Plain 모델의 오차가 정체되는 시점에서, Shortcut을 통해 기울기 소실을 방지하며 오차를 끝까지 낮출 때 증명된다.
