@@ -65,12 +65,103 @@ class Net(nn.Module):
     return x
 
 net = Net().to(device)
+
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
+
+for epoch in range(5):
+  running_loss = 0.0
+
+  for i, data in enumerate(train_loader, 0):
+    inputs, labels = data[0].to(device), data[1].to(device)
+    optimizer.zero_grad()
+
+    outputs = net(inputs)
+    loss = criterion(outputs, labels)
+    loss.backward()
+    optimizer.step()
+
+    running_loss += loss.item()
+    if i % 2000 == 1999:
+      print("Epoch: {} | Batch: {} | Loss: {}".format(epoch+1, i+1, running_loss/2000))
+      running_loss = 0.0
 ```
 
+Epoch: 1 | Batch: 2000 | Loss: 2.16815944981575 .....
+<br>
+Epoch: 5 | Batch: 12000 | Loss: 1.0179827889576554
 
+```
+PATH = './cifar_net.pth'
+torch.save(net.state_dict(), PATH)
 
+dataiter = iter(test_loader)
+images, labels = next(dataiter)
 
+imshow(torchvision.utils.make_grid(images))
+print(' '.join('\t{}'.format(classes[labels[j]]) for j in range(4)))
 
+net = Net().to(device)
+net.load_state_dict(torch.load(PATH))
+
+outputs = net(images.to(device))
+_, predicted = torch.max(outputs, 1)
+print(' '.join('\t{}'.format(classes[predicted[j]]) for j in range(4)))
+
+correct = 0
+total = 0
+
+with torch.no_grad():
+  for data in test_loader:
+    images, labels = data[0].to(device), data[1].to(device)
+    outputs = net(images)
+    _, predicted = torch.max(outputs.data, 1)
+    total += labels.size(0)
+    correct += (predicted == labels).sum().item()
+
+  print(100 * correct / total)
+```
+
+cat 	ship 	plane 	plane
+<br>
+60.18
+
+```
+class_correct = list(0. for i in range(10))
+class_total = list(0. for i in range(10))
+
+with torch.no_grad():
+  for data in test_loader:
+    images, labels = data[0].to(device), data[1].to(device)
+    outputs = net(images)
+    _, predicted = torch.max(outputs.data, 1)
+    c = (predicted == labels).squeeze()
+    for i in range(4):
+      label = labels[i]
+      class_correct[label] += c[i].item()
+      class_total[label] += 1
+for i in range(10):
+  print("Accuracy of {}: {}%".format(classes[i], 100*class_correct[i] / class_total[i]))
+```
+Accuracy of plane: 72.9%
+<br>
+Accuracy of car: 82.7%
+<br>
+Accuracy of bird: 51.7%
+<br>
+Accuracy of cat: 33.0%
+<br>
+Accuracy of deer: 61.1%
+<br>
+Accuracy of dog: 34.4%
+<br>
+Accuracy of frog: 69.2%
+<br>
+Accuracy of horse: 65.7%
+<br>
+Accuracy of ship: 78.0%
+<br>
+Accuracy of truck: 53.1%
 
 
 
