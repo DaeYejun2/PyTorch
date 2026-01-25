@@ -473,7 +473,7 @@ plt.show()
 
 전이학습 성능이 상당하다.
 
-## 시각화
+## 시각화 1
 ```
 def visualize_model(model, num_images=6):
     # 모델의 현재 모드(train/eval)를 기억해둡니다.
@@ -526,3 +526,43 @@ visualize_model(net, num_images=6)
 
 plane의 특성이 bird와 유사해서 그런지 정확도가 높아도 오류가 나타남을 확인할 수 있다.
 
+## 시각화 2
+```
+# --- 시각화 및 모델 저장 구간 ---
+epochs_range = range(1, NUM_EPOCHS + 1)
+plt.figure(figsize=(12, 5))
+
+# 1. Loss 그래프
+plt.subplot(1, 2, 1)
+plt.plot(epochs_range, train_losses, 'r-o', label='Training Loss')
+plt.title('Training Loss per Epoch')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.legend()
+
+# 2. Accuracy 그래프
+plt.subplot(1, 2, 2)
+plt.plot(epochs_range, train_accuracies, 'g-s', label='Training Accuracy')
+plt.title('Training Accuracy per Epoch')
+plt.xlabel('Epochs')
+plt.ylabel('Accuracy (%)')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+max_acc = max(train_accuracies)
+print(f"최고 정확도: {max_acc:.2f}%")
+
+# 최종 모델 저장
+PATH = './resnet18_cifar_best.pth'
+torch.save(net.state_dict(), PATH)
+```
+<img width="1189" height="490" alt="image" src="https://github.com/user-attachments/assets/78b33df0-096d-4edd-8a9b-8b334b32667a" />
+최고 정확도: 96.07%
+
+### 번외
+<img width="695" height="789" alt="image" src="https://github.com/user-attachments/assets/ff708387-d190-4186-8651-8df7a62a74ac" />
+
+<br>
+ResNet 학습을 한번 더 돌려 정확도가 더 좋아지자 plane도 정상적으로 식별할 수 있게 되었다.
