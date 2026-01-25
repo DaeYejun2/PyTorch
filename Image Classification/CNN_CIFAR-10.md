@@ -42,6 +42,7 @@ images, labels = next(dataiter)
 imshow(torchvision.utils.make_grid(images))
 ```
 <img width="543" height="176" alt="image" src="https://github.com/user-attachments/assets/8dad6249-fed8-4140-957b-a6340304b054" />
+<br>
 ```
 class Net(nn.Module):
   def __init__(self):
