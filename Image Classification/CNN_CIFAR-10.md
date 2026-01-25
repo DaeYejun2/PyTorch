@@ -163,6 +163,33 @@ Accuracy of ship: 78.0%
 <br>
 Accuracy of truck: 53.1%
 
+```
+def imshow(img):
+  img = img / 2 + 0.5
+  npimg = img.numpy()
+  plt.imshow(np.transpose(np.img, (1,2,0)))
+  plt.show()
+
+dataiter = iter(test_loader)
+images, labels = next(dataiter)
+
+outputs = net(images.to(device))
+_, predicted = torch.max(outputs, 1)
+
+fig = plt.figure(figsize=(12, 4))
+for idx in range(4):
+  ax = fig.add_subplot(1, 4, idx+1, xticks=[], yticks=[])
+  img = images[idx] / 2 + 0.5
+  plt.imshow(np.transpose(img.numpy(), (1, 2, 0)))
+
+  color = "green" if predicted[idx] == labels[idx] else "red"
+  ax.set_title(f"Target: {classes[labels[idx]]}\n(pred: {classes[predicted[idx]]})", color=color)
+
+plt.tight_layout()
+plt.show()
+```
+<img width="1189" height="344" alt="image" src="https://github.com/user-attachments/assets/9ad73b01-432f-4349-b109-042a58174953" />
+
 
 
 
