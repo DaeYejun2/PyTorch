@@ -473,6 +473,56 @@ plt.show()
 
 전이학습 성능이 상당하다.
 
+## 시각화
+```
+def visualize_model(model, num_images=6):
+    # 모델의 현재 모드(train/eval)를 기억해둡니다.
+    was_training = model.training
+    # 평가 모드로 전환 (BatchNorm, Dropout 작동 방식 고정)
+    model.eval()
+    
+    images_so_far = 0
+    # 전체 그림 사이즈 설정
+    plt.figure(figsize=(12, 8))
 
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(test_loader):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
 
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            for j in range(inputs.size()[0]):
+                images_so_far += 1
+                # num_images 개수만큼 격자를 만듭니다.
+                ax = plt.subplot(num_images // 2, 2, images_so_far)
+                ax.axis('off')
+                
+                # 예측값과 실제 정답을 제목에 표시
+                color = "green" if preds[j] == labels[j] else "red"
+                ax.set_title(f'predicted: {classes[preds[j]]}\n(actual: {classes[labels[j]]})', color=color)
+                
+                # 이미지 역정규화 및 출력
+                img = inputs.cpu().data[j] / 2 + 0.5
+                npimg = img.numpy()
+                plt.imshow(np.transpose(npimg, (1, 2, 0)))
+
+                if images_so_far == num_images:
+                    # 함수 종료 전 원래 모델 모드로 복구
+                    model.train(mode=was_training)
+                    plt.tight_layout()
+                    plt.show()
+                    return
+        
+        model.train(mode=was_training)
+        plt.tight_layout()
+        plt.show()
+
+# 함수 호출
+visualize_model(net, num_images=6)
+```
+<img width="695" height="789" alt="image" src="https://github.com/user-attachments/assets/3db02ba5-0872-4bc9-9b6a-2cc605d6ea25" />
+
+plane의 특성이 bird와 유사해서 그런지 정확도가 높아도 오류가 나타남을 확인할 수 있다.
 
