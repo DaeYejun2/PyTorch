@@ -4,7 +4,7 @@
 <br>
 반도체 8대 공정 중 Etching 및 Deposition 단계에서 수집되는 센서 데이터를 주요 분석 대상으로 한다.
 <br>
-*Data Source: 공정 내 온도, 압력, 유량 등의 시계열 센서 수치*
+Data Source: 공정 내 온도, 압력, 유량 등의 시계열 센서 수치(SECOM)
 
 # 📊 Data Characteristics
 * Normalization: 모든 데이터는 0과 1 사이로 정규화 되어있다.
