@@ -8,7 +8,7 @@ This dataset contains 1,567 examples of semiconductor manufacturing process data
   * RNN은 문장이나 시계열 데이터가 길어지면, 앞부분의 정보가 뒤로 전달되지 못하고 사라지는데 이를 **기울기 소실**이라 한다.
   * LSTM은 Cell State라는 별도의 공간을 만들어, 중요한 정보는 수많은 스템이 지나도 손실 없이 끝까지 전달한다.
 2. 선별적 기억 능력
-<br>
+
 LSTM은 3가지 Gate를 통해 정보를 관리한다.
 
 * 쓸모없는 과거 정보(일시적 노이즈 같은)를 삭제
