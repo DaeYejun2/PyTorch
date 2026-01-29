@@ -1,4 +1,10 @@
 ## Before starting..
+### AEP_MX 데이터
+* AEP_MW는 미국 동부 지역의 대형 전력 회사인 American Electric Power의 MW(전력량 측정 단위)이다.
+* 즉, 이 데이터는 AEP 전력 회사가 공급하는 지역의 사람들이 매시간 총 몇 MW의 전기를 썼는가를 기록한 로그이다.
+### 목표
+요일별/시간별 전력 수요 예측을 통해 효율적인 전력 생산을 가능케 한다.
+<br>
 * n_estimators: 생성할 나무의 개수(너무 많으면 Overfitting)
 * learnig_rate: 각 나무의 보정 강도(보통 0.01~0.1)
 * max_depth: 나무의 깊이(보통 3~10, 센서 데이터처럼 복잡하면 깊게 조절)
@@ -114,9 +120,9 @@ X_test, y_test = test[FEATURES], test[TARGET]
 # XGBoost 모델 학습
 import xgboost as xgb
 reg = xgb.XGBRegressor(
-    n_estimators=1000,
-    learning_rate=0.01,
-    max_depth=5,
+    n_estimators=1000,  # 최대 1000개의 트리
+    learning_rate=0.01, # 오차를 줄여나가는 비율
+    max_depth=5,        # decision tree의 깊이를 5까지
     early_stopping_rounds=50,
     random_state=42
 )
@@ -133,10 +139,25 @@ reg.fit(X_train, y_train,
   * validation_0: 학습한 모델의 점수
   * validation_1: 모델의 테스트 점수
 * 로그 점수
-  * [0]번 단계: 처음에는 오차가 2580정도로 매우 크다. 학습한게 없는 상황
-  * [800]번 단계: 오차가 958까지 떨어졌다. 
-  * n_estimators를 1000으로 설정했지만
+  * [0]번 단계: 처음에는 오차가 2578정도로 매우 크다. 학습한게 없는 상황
+  * [700]번 단계: 오차가 885까지 떨어졌다. 
+  * n_estimators를 1000으로 설정했지만, early_stopping_rounds=50 으로 과적합을 피했다.
+    * 한번 최고 성적이 나오고 50회 동안 더 나아지지 않으면 조기 종료
+   
+## 어떤 feature를 가장 중요하게 생각하는지
+```
+from xgboost import plot_importance
 
+# 어떤 피처가 가장 중요했는지 그래프로 보기
+plt.figure(figsize=(10, 8))
+plot_importance(reg, height=0.9)
+plt.show()
+```
+<img width="624" height="455" alt="image" src="https://github.com/user-attachments/assets/5b90c12f-d38a-4806-91df-589383d1bd87" />
+
+1. dayofweek: 전력 소비 패턴이 평일과 주말에 따라 매우 극명하게 갈린다는 뜻.(공장이 돌아가는 날과 쉬는 날의 전력 사용 차이가 크다는 걸 캐치)
+2. lag_24h: "어제 이 시간엔 에너지를 얼마나 썻지?" 라는 정보가 예측에 큰 도움을 준것으로 보인다.
+3. lag_7d & hour: 일주일 전 데이터와 현재 시간대가 비슷한 중요도를 보인다.
 
 
 
