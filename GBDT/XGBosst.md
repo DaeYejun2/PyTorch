@@ -145,7 +145,7 @@ reg.fit(X_train, y_train,
   * n_estimators를 1000으로 설정했지만, early_stopping_rounds=50 으로 과적합을 피했다.
     * 한번 최고 성적이 나오고 50회 동안 더 나아지지 않으면 조기 종료
    
-## 어떤 feature를 가장 중요하게 생각하는지
+# 3. 어떤 feature를 가장 중요하게 생각하는지
 ```
 from xgboost import plot_importance
 
@@ -160,13 +160,30 @@ plt.show()
 2. lag_24h: "어제 이 시간엔 에너지를 얼마나 썻지?" 라는 정보가 예측에 큰 도움을 준것으로 보인다.
 3. lag_7d & hour: 일주일 전 데이터와 현재 시간대가 비슷한 중요도를 보인다.
 
+# 실제 vs 예측 비교
+CSV 파일에 들어있던 실제 데이터와 머신러닝으로 구한 예측값을 비교해보겠다.
+
+```
+# 1. 테스트 데이터에 대한 예측값 생성
+test['prediction'] = reg.predict(X_test)
+
+# 2. 시각화(최근 2주치(약 336시간))
+plt.figure(figsize=(15, 6))
+test['AEP_MW'][-336:].plot(label='Actual (Real)', color='blue', alpha=0.7)
+test['prediction'][-336:].plot(label='Predicted (XGB)', color='red', linestyle='--')
+
+plt.title('AEP Energy Consumption: Actual vs Predicted (Last 2 Weeks)')
+plt.ylabel('Power Consumption (MW)')
+plt.legend()
+plt.grid(True)
+plt.show()
+```
+<img width="1264" height="580" alt="image" src="https://github.com/user-attachments/assets/1d420de6-8e21-4757-acf2-0d69cae0b5d0" />
+
+### 결과
+* 높낮이가 바뀌는 구간(주말 추정)에서도 예측값과 실제값이 유사한 결과가 나오는 것을 확인할 수 있다.
+* 가끔 Peak에서 모델이 실제보다 조금 높거나 낮게 예측하는 경우가 있는데, 날씨같은 외부 변수가 반영되지 않았기 때문일 가능성이 크다.
+* 요일과 24시간 전 소비량이 전력 수요를 결정하는 가장 중요한 요소임을 데이터로 확인했고, 미국 동부 지역의 전력 소비가 주중/주말 패턴과 직전 시간대의 연속성에 매우 강하게 의존한다는 사실을 확인할 수 있다.
 
 
-
-
-
-
-
-
-
-
+피처 엔지니어링(시간 추출, Lag 변수) -> 데이터 분할(시계열 방식) -> 모델 학습 및 검증 -> 시각화 과정을 수행했다.
