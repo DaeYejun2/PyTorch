@@ -322,3 +322,244 @@ submission['completed'] = final_test_preds
 submission.to_csv('submission3.csv', index=False)
 ```
 
+## 2차 보강
+* K-Fold를 적용한 LightGBM 성능 극대화 코드
+* K-Fold: 데이터를 N개로 나눠, 모든 데이터가 한 번씩은 학습과 테스트를 볼 수 있게 하는 편향된 학습이 아닌 일관성 있는 학습법
+
+```
+from sklearn.model_selection import StratifiedKFold
+import numpy as np
+
+# K-Fold 설정
+n_splits = 5
+skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+
+# 각 Fold의 결과와 테스트 데이터 예측값을 담을 리스트
+oof_preds = np.zeros(len(X)) # Out-Of-Fold 예측 (학습 데이터 검증용)
+test_preds_total = np.zeros(len(test_X)) # 최종 제출용 테스트 데이터 예측
+f1_scores = []
+
+for i, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+  # 데이터 분할
+  X_train_fold, X_val_fold = X.iloc[train_idx], X.iloc[val_idx]
+  y_train_fold, y_val_fold = y.iloc[train_idx], y.iloc[val_idx]
+
+  model = lgb.LGBMClassifier(
+    n_estimators=1500,
+    learning_rate=0.01,
+    max_depth=6,
+    num_leaves=31,
+    class_weights='balanced',
+    random_state=42,
+    verbose=-1,
+    subsample=0.8,
+    colsample_bytree=0.8,
+  )
+
+  model.fit(X_train_fold, y_train_fold)
+
+  # 검증 데이터 예측 (확률값)
+  val_probs = model.predict_proba(X_val_fold)[:, 1]
+  oof_preds[val_idx] = val_probs
+
+  # 테스트 데이터 예측 (확률값 누적)
+  test_preds_total += model.predict_proba(test_X)[:, 1] / n_splits
+
+  # 해당 폴드 F1 Score (Threshold 0.25 기준)
+  fold_f1 = f1_score(y_val_fold, (val_probs >= 0.25).astype(int))
+  f1_scores.append(fold_f1)
+  print(f"Fold {i+1} F1 Score: {fold_f1:.4f}")
+
+print(f"\n평균 F1 Score: {np.mean(f1_scores):.4f}")
+
+# Fold 1 F1 Score: 0.4640
+# Fold 2 F1 Score: 0.4000
+# Fold 3 F1 Score: 0.4237
+# Fold 4 F1 Score: 0.4320
+# Fold 5 F1 Score: 0.3670
+
+# 평균 F1 Score: 0.4173
+
+best_f1 = 0
+best_threshold = 0
+
+for t in np.arange(0.1, 0.6, 0.01):
+    score = f1_score(y, (oof_preds >= t).astype(int))
+    if score > best_f1:
+        best_f1 = score
+        best_threshold = t
+
+print(f"최적의 Threshold: {best_threshold:.2f}")
+print(f"최종 교차 검증 F1 Score: {best_f1:.4f}")
+
+# 최종 제출 파일 만들기
+final_submission_preds = (test_preds_total >= best_threshold).astype(int)
+submission['completed'] = final_submission_preds
+submission.to_csv('kfold_final_submission.csv', index=False)
+
+# 최적의 Threshold: 0.10
+3 최종 교차 검증 F1 Score: 0.4385
+```
+
+## XGBoost 추가
+```
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
+from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import f1_score
+import numpy as np
+
+# 1. 설정
+n_splits = 5
+skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=42)
+oof_preds = np.zeros(len(X))
+test_preds_total = np.zeros(len(test_X))
+
+print(f"--- Ensemble (LGBM + XGB) {n_splits}-Fold Start ---")
+
+# 자격증/희망 직무
+def get_ambition_score(row):
+    score = 0
+    # 자격증이 1개라도 있으면 +1
+    if len(str(row['certificate_acquisition'])) > 2: score += 1
+    # 희망 직무가 구체적이면 +1
+    if len(str(row['desired_job'])) > 5: score += 1
+    # 투입 시간이 4시간 이상이면 +1
+    if row['time_input_num'] >= 4: score += 1
+    return score
+
+train_clean['ambition_score'] = train_clean.apply(get_ambition_score, axis=1)
+test_clean['ambition_score'] = test_clean.apply(get_ambition_score, axis=1)
+
+# [2. 피처 리스트 업데이트]
+features = [
+    'generation', 'school1', 'major_data', 'completed_semester', 
+    'time_input_num', 'total_loyalty', 'whyBDA_len', 'what_to_gain_len',
+    'passion_score', 'job', 'inflow_route', 're_registration',
+    'ambition_score' 
+]
+
+X = train_clean[features]
+test_X = test_clean[features]
+
+for i, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+    X_train_f, X_val_f = X.iloc[train_idx], X.iloc[val_idx]
+    y_train_f, y_val_f = y.iloc[train_idx], y.iloc[val_idx]
+    
+    # [Model 1: LightGBM]
+    lgbm = LGBMClassifier(
+        n_estimators=1000, learning_rate=0.01, max_depth=6,
+        class_weight='balanced', random_state=42, verbose=-1
+    )
+    
+    # [Model 2: XGBoost] 
+    # XGB는 class_weight 대신 scale_pos_weight를 사용 (미수료/수료 비율 약 2.35)
+    xgb = XGBClassifier(
+        n_estimators=1000, learning_rate=0.01, max_depth=5,
+        scale_pos_weight=2.35, random_state=42, eval_metric='logloss'
+    )
+    
+    # 각 모델 학습
+    lgbm.fit(X_train_f, y_train_f)
+    xgb.fit(X_train_f, y_train_f)
+    
+    # 예측 확률값 앙상블 (5:5 비중)
+    lgbm_prob = lgbm.predict_proba(X_val_f)[:, 1]
+    xgb_prob = xgb.predict_proba(X_val_f)[:, 1]
+    
+    combined_prob = (lgbm_prob * 0.5) + (xgb_prob * 0.5)
+    oof_preds[val_idx] = combined_prob
+    
+    # 테스트 데이터 예측값 누적
+    lgbm_test_prob = lgbm.predict_proba(test_X)[:, 1]
+    xgb_test_prob = xgb.predict_proba(test_X)[:, 1]
+    test_preds_total += ((lgbm_test_prob * 0.5) + (xgb_test_prob * 0.5)) / n_splits
+    
+    print(f"Fold {i+1} completed.")
+
+# 2. 최적 Threshold 찾기 및 평가
+best_f1 = 0
+best_t = 0
+for t in np.arange(0.1, 0.6, 0.01):
+    score = f1_score(y, (oof_preds >= t).astype(int))
+    if score > best_f1:
+        best_f1 = score
+        best_t = t
+
+# [4. 최종 F1 Score 출력 (코드 마지막에 위치)]
+print(f"최적 Threshold: {best_t:.2f}")
+print(f"피처 추가 후 최종 앙상블 F1 Score: {best_f1:.4f}")
+```
+
+* 피처 추가 후 최종 앙상블 F1 Score: 0.4608
+
+## CatBoost 추가
+```
+from catboost import CatBoostClassifier
+
+# 1. 초기화 (이전 결과와 섞이지 않도록)
+oof_preds = np.zeros(len(X))
+test_preds_total = np.zeros(len(test_X))
+
+print(f"--- LGBM + XGB + CatBoost Start ---")
+
+for i, (train_idx, val_idx) in enumerate(skf.split(X, y)):
+    X_train_f, X_val_f = X.iloc[train_idx], X.iloc[val_idx]
+    y_train_f, y_val_f = y.iloc[train_idx], y.iloc[val_idx]
+    
+    # [Model 1: LightGBM]
+    lgbm = LGBMClassifier(n_estimators=1000, learning_rate=0.01, max_depth=6, class_weight='balanced', random_state=42, verbose=-1)
+    
+    # [Model 2: XGBoost]
+    xgb = XGBClassifier(n_estimators=1000, learning_rate=0.01, max_depth=5, scale_pos_weight=2.35, random_state=42, eval_metric='logloss')
+    
+    # [Model 3: CatBoost]
+    # CatBoost는 auto_class_weights로 불균형을 잡아준다.
+    cat = CatBoostClassifier(n_estimators=1000, learning_rate=0.01, depth=6, random_seed=42, auto_class_weights='Balanced', verbose=0)
+    
+    # 각 모델 학습
+    lgbm.fit(X_train_f, y_train_f)
+    xgb.fit(X_train_f, y_train_f)
+    cat.fit(X_train_f, y_train_f)
+    
+    # 예측 확률값 앙상블 (1/3씩 균등하게 배분)
+    lgbm_p = lgbm.predict_proba(X_val_f)[:, 1]
+    xgb_p = xgb.predict_proba(X_val_f)[:, 1]
+    cat_p = cat.predict_proba(X_val_f)[:, 1]
+    
+    combined_prob = (lgbm_p + xgb_p + cat_p) / 3
+    oof_preds[val_idx] = combined_prob
+    
+    # 테스트 데이터 누적
+    test_preds_total += ((lgbm.predict_proba(test_X)[:, 1] + 
+                          xgb.predict_proba(test_X)[:, 1] + 
+                          cat.predict_proba(test_X)[:, 1]) / 3) / n_splits
+    
+    print(f"Fold {i+1} completed.")
+
+# 최적 Threshold 및 F1 확인
+best_f1 = 0
+best_t = 0
+for t in np.arange(0.1, 0.6, 0.01):
+    score = f1_score(y, (oof_preds >= t).astype(int))
+    if score > best_f1:
+        best_f1 = score
+        best_t = t
+
+print(f"\n최적 Threshold: {best_t:.2f}")
+print(f"삼각 편대 앙상블 최종 F1 Score: {best_f1:.4f}")
+
+# 최적 Threshold: 0.21
+# 삼각 편대 앙상블 최종 F1 Score: 0.4724
+```
+
+
+
+
+
+
+
+
+
+
+
