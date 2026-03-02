@@ -96,5 +96,31 @@ for i in range(9):
 # 테스트 데이터 중 결함 데이터(예: Scratch) 인덱스 하나 골라서 실행
 ```
 
-<img width="794" height="415" alt="image" src="https://github.com/user-attachments/assets/2cd58ab0-c10d-438a-b108-199c67fac17c" />
+<img width="598" height="1575" alt="image" src="https://github.com/user-attachments/assets/20a741fc-18b1-4045-9773-dfa1925a2f76" />
+
+<img width="596" height="1286" alt="image" src="https://github.com/user-attachments/assets/80e2763b-3860-4652-8bcc-ba593b910f05" />
+
+Random, Conut, Near-full과 같이 잘 맞춘 패턴들의 공통점은 웨이퍼의 특정 '면적'이나 '범위'를 차지하는 Global한 특징을 가지고 있다. 이로 인해 현재의 모델은 전반적인 픽셀의 밀도와 위치를 파악하는데는 좋은 성능을 보인다.
+
+반면 Scratch는 면적이 아닌 가느다란 선이다. 현재 모델은 이미지의 Shape보다는 분포에 의존해 학습된 상태이다.
+
+현재까지의 결과로 확인할 수 있는 결론은, Grad-CAM은 면적 기반 결함에 대해서는 결함 위치를 정확히 특정하며 높은 신뢰도를 보인다. 하지만 선형 결함의 경우, 모델이 결함의 국소적인 특징보다 거시적인 픽셀 밀도에 집중하는 경향이 있어 검출률이 저하됨을 확인하였다.
+
+이를 해결하기 위해 모델이 스크래치의 '선'을 물리적으로 식별할 수 있도록 해상도를 높여주는 방식으로 데이터를 준비시켜보겠다.
+
+기존 64x64 에서 128x128로 해상도를 변경해서 확인해보겠다.
+
+<img width="637" height="430" alt="image" src="https://github.com/user-attachments/assets/7245c094-60c6-4914-9b45-bc64a48cf868" />
+
+해상도 상향의 Precision이 0.67에서 0.79로 유의미한 변화가 있긴 하지만, 여전히 모델이 스크래치를 정상과 구별하기엔 특징이 너무 약하다고 느끼는 것 같다.
+
+어쩔 수 없이 Scratch 전용 가중치 부여를 해보겠다. 작동 방식은 Scratch를 none이라고 예측했을 때 받는 Loss가 너무 작기 때문이다. Loss를 더 높여 더 민감한 반응을 유도한다.
+
+<img width="614" height="424" alt="image" src="https://github.com/user-attachments/assets/a59ba9c2-46e5-4316-8423-4716741842ba" />
+
+가중치를 높이니 모델이 조금이라도 결함이 느껴지면 스크래치라고 반응하게 되어 진짜 스크래치는 더 많이 찾았지만(Recall 증가), 멀쩡한 노이즈를 스크래치(Precision)로 오해하기 시작한 것이다.
+
+128x128 해상도에서도 여전히 선의 특징이 점(노이즈)의 특징과 유사하게 판단하는 것 같다.
+
+ResNet-18모델은 아주 미세한 픽셀 단위의 연결성을 파악하기보다는 전체적인 패턴에 더 강점이 있는 것 같다.
 
